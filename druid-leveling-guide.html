@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feral Druid Leveling</title>
+<style>
+:root{
+  --bg:#0d0b08; --panel:#17130e; --panel2:#1f1a13; --line:#3a2f20; --text:#e8dcc4; --muted:#a8987a;
+  --gold:#ffd100; --orange:#ff7d0a; --green:#1eff00; --blue:#4aa3ff; --red:#ff5a4a;
+  --balance:#5f8fd8; --feral:#d8742a; --resto:#4fbf5a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 "Segoe UI",system-ui,sans-serif}
+a{color:var(--blue)}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+header h1{margin:0;font-size:30px;color:var(--orange);letter-spacing:.5px}
+header p{margin:6px 0 0;color:var(--muted)}
+nav{position:sticky;top:0;z-index:20;background:rgba(13,11,8,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(4px)}
+nav .wrap{padding:10px 16px;display:flex;gap:14px;flex-wrap:wrap}
+nav a{color:var(--muted);text-decoration:none;font-size:13px;text-transform:uppercase;letter-spacing:.6px}
+nav a:hover{color:var(--gold)}
+section{margin-top:40px}
+h2{color:var(--gold);font-size:21px;border-bottom:1px solid var(--line);padding-bottom:6px;margin:0 0 16px}
+h3{color:var(--orange);font-size:16px;margin:22px 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+.note{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--gold);font-weight:600;background:var(--panel2)}
+tbody tr:hover{background:var(--panel2)}
+.tbl{overflow-x:auto}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600}
+.tag.F{background:rgba(216,116,42,.18);color:var(--feral)}
+.tag.R{background:rgba(79,191,90,.18);color:var(--resto)}
+.tag.B{background:rgba(95,143,216,.18);color:var(--balance)}
+kbd,.key{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 6px;font-size:13px;color:var(--gold);white-space:nowrap}
+ol.rot{margin:6px 0 0;padding-left:22px}
+ol.rot li{margin:3px 0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+
+/* ---------- talent calculator ---------- */
+.controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.controls input[type=range]{flex:1;min-width:200px;accent-color:var(--orange)}
+.lvl{font-size:26px;font-weight:700;color:var(--gold);min-width:110px}
+.split{font-size:15px;color:var(--muted)}
+.split b{color:var(--text)}
+.btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 12px;cursor:pointer;font:inherit;font-size:13px}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.trees{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:980px){.trees{grid-template-columns:1fr}}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 10px 14px;position:relative}
+.tree h4{margin:0 0 8px;text-align:center;font-size:15px;display:flex;justify-content:center;gap:8px;align-items:baseline}
+.tree h4 span{color:var(--muted);font-weight:400;font-size:13px}
+.tree.B h4{color:var(--balance)} .tree.F h4{color:var(--feral)} .tree.R h4{color:var(--resto)}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:62px;gap:4px;position:relative;max-width:300px;margin:0 auto}
+.tal{position:relative;width:46px;height:46px;justify-self:center;align-self:center;border-radius:6px;border:2px solid #555;background:#222 center/cover no-repeat;cursor:help;filter:grayscale(1) brightness(.45);transition:filter .15s,border-color .15s}
+.tal.part{filter:none;border-color:var(--green)}
+.tal.max{filter:none;border-color:var(--gold)}
+.tal.next{filter:none;border-color:var(--orange);box-shadow:0 0 10px var(--orange)}
+.tal .pts{position:absolute;right:-8px;bottom:-8px;background:#000;border:1px solid #555;border-radius:4px;font-size:11px;font-weight:700;padding:0 4px;color:var(--muted);line-height:16px}
+.tal.part .pts{color:var(--green);border-color:var(--green)}
+.tal.max .pts{color:var(--gold);border-color:var(--gold)}
+.tal .lv{position:absolute;left:-6px;top:-8px;background:var(--orange);color:#000;font-size:10px;font-weight:700;border-radius:3px;padding:0 3px;line-height:14px;display:none}
+.tal.part .lv,.tal.max .lv{display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:2px solid}
+#tip{position:fixed;z-index:50;pointer-events:none;max-width:320px;background:#080a14;border:1px solid #5a6a9a;border-radius:6px;padding:10px 12px;font-size:13px;display:none;box-shadow:0 6px 24px rgba(0,0,0,.6)}
+#tip .tn{color:#fff;font-weight:700;font-size:14px}
+#tip .tr{color:var(--muted);font-size:12px;margin-bottom:6px}
+#tip .td{color:var(--gold)}
+#tip .tl{margin-top:6px;color:var(--orange);font-size:12px}
+#tip .tlink{margin-top:4px;color:var(--muted);font-size:11px}
+</style>
+</head>
+<body>
+<header class="wrap" style="padding-bottom:0">
+  <h1>Feral Druid Leveling Guide 1–80</h1>
+  <p>WotLK 3.3.5a · Warmane Icecrown · Data source: <a href="https://wotlk.cavernoftime.com/" target="_blank" rel="noopener">wotlk.cavernoftime.com</a> (talent data &amp; trainer levels)</p>
+</header>
+<nav><div class="wrap">
+  <a href="#talents">Talent Tree</a><a href="#order">Talent Order</a><a href="#abilities">Abilities</a>
+  <a href="#rotation">Rotations</a><a href="#survival">Survival</a><a href="#glyphs">Glyphs</a><a href="#gear">Gear &amp; Stats</a><a href="#icecrown">Icecrown Tips</a>
+</div></nav>
+
+<main class="wrap">
+
+<section id="talents">
+  <h2>Talent Tree — 0 / 55 / 16 (leveling path)</h2>
+  <div class="card">
+    <div class="controls">
+      <div class="lvl">Level <span id="lvlNum">80</span></div>
+      <input type="range" id="lvl" min="9" max="80" value="80" aria-label="Character level">
+      <button class="btn" id="prev">◀ −1</button><button class="btn" id="next">+1 ▶</button>
+      <div class="split">Points: <b id="split">0/55/16</b></div>
+    </div>
+    <div class="trees" id="trees"></div>
+    <div class="legend">
+      <span><i style="border-color:var(--gold)"></i>Maxed</span>
+      <span><i style="border-color:var(--green)"></i>Partially ranked</span>
+      <span><i style="border-color:var(--orange)"></i>Point taken at this level</span>
+      <span><i style="border-color:#555"></i>Not taken</span>
+      <span>Orange corner tag = level the first point goes in. Hover for tooltip, click to open on Cavern of Time.</span>
+    </div>
+  </div>
+</section>
+
+<section id="order">
+  <h2>Talent Order by Level</h2>
+  <div class="card tbl"><table><thead><tr><th>Level</th><th>Talent</th><th>Tree</th><th>Tree total</th><th>Why</th></tr></thead><tbody id="orderBody"></tbody></table></div>
+  <p class="note">Every row/prerequisite gate was checked against the database talent layout (row N needs 5×(N−1) points in the tree; Rend and Tear / Primal Gore need 45, Berserk needs 50). At 80 for raiding, consider moving Feral Swiftness into Infected Wounds 3/3; use Dual Spec (40+) for a bear tank spec with Thick Hide, Natural Reaction, Protector of the Pack.</p>
+</section>
+
+<section id="abilities">
+  <h2>Trainer Abilities by Level (from the database)</h2>
+  <div class="grid2">
+    <div class="card tbl"><h3 style="margin-top:0">Feral</h3><table><thead><tr><th>Lvl</th><th>Ability</th></tr></thead><tbody>
+      <tr><td>10</td><td><b>Bear Form</b>, Maul, Growl, Demoralizing Roar <span class="note">(Bear quest)</span></td></tr>
+      <tr><td>12</td><td>Enrage</td></tr>
+      <tr><td>14</td><td>Bash</td></tr>
+      <tr><td>16</td><td><b>Travel Form</b>, <b>Aquatic Form</b> <span class="note">(quest)</span>, Swipe (Bear)</td></tr>
+      <tr><td>18</td><td><b>Faerie Fire (Feral)</b> — ranged pull in forms</td></tr>
+      <tr><td>20</td><td><b>Cat Form</b>, Claw, Rip, Prowl · Feral Charge (talent, 30 in this build)</td></tr>
+      <tr><td>22</td><td>Shred</td></tr>
+      <tr><td>24</td><td>Rake, Tiger's Fury</td></tr>
+      <tr><td>26</td><td>Dash</td></tr>
+      <tr><td>28</td><td>Cower, Challenging Roar</td></tr>
+      <tr><td>32</td><td><b>Ferocious Bite</b>, Ravage, Track Humanoids</td></tr>
+      <tr><td>36</td><td>Pounce, Frenzied Regeneration</td></tr>
+      <tr><td>40</td><td><b>Dire Bear Form</b>, Savage Defense, Feline Grace</td></tr>
+      <tr><td>50</td><td>Mangle (talent) — trainer ranks at 58/68/75/80</td></tr>
+      <tr><td>60</td><td>Flight Form, Berserk (talent)</td></tr>
+      <tr><td>62</td><td>Maim</td></tr>
+      <tr><td>66</td><td>Lacerate</td></tr>
+      <tr><td>70</td><td>Swift Flight Form</td></tr>
+      <tr><td>71</td><td><b>Swipe (Cat)</b></td></tr>
+      <tr><td>75</td><td><b>Savage Roar</b></td></tr>
+    </tbody></table></div>
+    <div class="card tbl"><h3 style="margin-top:0">Caster / Utility</h3><table><thead><tr><th>Lvl</th><th>Ability</th></tr></thead><tbody>
+      <tr><td>1</td><td>Wrath, Healing Touch, Mark of the Wild</td></tr>
+      <tr><td>4</td><td>Moonfire, Rejuvenation</td></tr>
+      <tr><td>6</td><td>Thorns</td></tr>
+      <tr><td>8</td><td>Entangling Roots</td></tr>
+      <tr><td>10</td><td>Nature's Grasp, Teleport: Moonglade</td></tr>
+      <tr><td>12</td><td>Regrowth, Revive</td></tr>
+      <tr><td>14</td><td>Cure Poison <span class="note">(quest)</span></td></tr>
+      <tr><td>18</td><td>Faerie Fire, Hibernate</td></tr>
+      <tr><td>20</td><td>Starfire, Insect Swarm, Rebirth</td></tr>
+      <tr><td>24</td><td>Remove Curse</td></tr>
+      <tr><td>26</td><td>Abolish Poison</td></tr>
+      <tr><td>30</td><td>Tranquility</td></tr>
+      <tr><td>40</td><td>Innervate, Hurricane</td></tr>
+      <tr><td>44</td><td>Barkskin</td></tr>
+      <tr><td>60</td><td>Gift of the Wild</td></tr>
+      <tr><td>64</td><td>Lifebloom</td></tr>
+      <tr><td>70</td><td>Cyclone</td></tr>
+      <tr><td>80</td><td>Nourish</td></tr>
+    </tbody></table></div>
+  </div>
+  <p class="note">Train every new rank — Rip, Shred, Rake, Ferocious Bite and Mangle scale heavily with rank. Northrend flying needs Cold Weather Flying (77). Full Feral spell list: <a href="https://wotlk.cavernoftime.com/spells=7.11.134" target="_blank" rel="noopener">spells=7.11.134</a>.</p>
+</section>
+
+<section id="rotation">
+  <h2>Rotations by Level Bracket</h2>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0">1–9 · Caster</h3><ol class="rot">
+      <li><span class="key">Wrath</span> → <span class="key">Moonfire</span> → <span class="key">Wrath</span> until it reaches you</li>
+      <li>Melee / Wrath to finish</li>
+      <li>Keep Mark of the Wild + Thorns up; Rejuvenation to top off</li></ol></div>
+    <div class="card"><h3 style="margin-top:0">10–19 · Bear</h3><ol class="rot">
+      <li>Pull: <span class="key">Wrath</span> → <span class="key">Moonfire</span> → shift <span class="key">Bear</span></li>
+      <li><span class="key">Enrage</span> if low rage, <span class="key">Demoralizing Roar</span> on 2+ mobs</li>
+      <li>Spam <span class="key">Maul</span>; <span class="key">Bash</span> casters; <span class="key">Swipe</span> on packs (16+)</li>
+      <li>Heal: shift out → Regrowth + Rejuvenation → back in</li></ol></div>
+    <div class="card"><h3 style="margin-top:0">20–31 · Cat (no Bite yet)</h3><ol class="rot">
+      <li><span class="key">Prowl</span> → <span class="key">Rake</span> (24+) or <span class="key">Claw</span></li>
+      <li><span class="key">Claw</span> to 3–5 combo points</li>
+      <li><span class="key">Rip</span> — your only finisher until 32</li>
+      <li>Ranged pull: <span class="key">Faerie Fire (Feral)</span>. Shred only when behind.</li>
+      <li>30: Feral Charge (Cat leap / Bear interrupt). 2+ dangerous mobs → Bear.</li></ol></div>
+    <div class="card"><h3 style="margin-top:0">32–49 · Cat (Bite &amp; Pounce)</h3><ol class="rot">
+      <li><span class="key">Prowl</span> → <span class="key">Pounce</span> (36+) or <span class="key">Ravage</span> from behind</li>
+      <li><span class="key">Rake</span> → <span class="key">Claw</span> to 5 CP</li>
+      <li>Normal mobs: <span class="key">Ferocious Bite</span> at 4–5 CP</li>
+      <li>Elites: Rake → build → <span class="key">Rip</span> → build → <span class="key">Bite</span></li>
+      <li><span class="key">Tiger's Fury</span> every pull when energy is low</li>
+      <li>40: Improved Leader of the Pack = crit self-heals, almost no downtime</li></ol></div>
+    <div class="card"><h3 style="margin-top:0">50–74 · Cat (Mangle, Berserk)</h3><ol class="rot">
+      <li>Open: <span class="key">Pounce</span> or <span class="key">Faerie Fire (Feral)</span></li>
+      <li><span class="key">Mangle</span> → <span class="key">Rake</span> → Mangle/<span class="key">Shred</span> (behind) to 5 CP</li>
+      <li>Normal: <span class="key">Bite</span> · Elite: <span class="key">Rip</span> then <span class="key">Bite</span></li>
+      <li><span class="key">Berserk</span> (60) on 3+ mob pulls or elites</li>
+      <li>62: King of the Jungle → Tiger's Fury gives 60 energy. <span class="key">Maim</span> for runners/casters.</li>
+      <li>65+ (Furor): <b>powershift</b> at 0–10 energy (shift out/in = +40 energy)</li></ol></div>
+    <div class="card"><h3 style="margin-top:0">75–80 · Cat (Savage Roar)</h3><ol class="rot">
+      <li><span class="key">Faerie Fire (Feral)</span> / <span class="key">Pounce</span></li>
+      <li><span class="key">Mangle</span> → <span class="key">Savage Roar</span> at 1–2 CP</li>
+      <li><span class="key">Rake</span> → Shred/Mangle to 5 CP</li>
+      <li><span class="key">Rip</span> → <span class="key">Bite</span> only when Rip &amp; Roar have &gt;8s left</li>
+      <li>Trash: skip Rip — Roar then Bite at 5 CP</li>
+      <li>Omen of Clarity (78) proc → spend on Shred/Mangle, never Bite</li></ol></div>
+    <div class="card" style="grid-column:1/-1"><h3 style="margin-top:0">AoE &amp; Dungeon Tanking (Dire Bear)</h3><ol class="rot">
+      <li>Pull: <span class="key">Feral Charge (Bear)</span> or <span class="key">Faerie Fire (Feral)</span></li>
+      <li>Spam <span class="key">Swipe (Bear)</span>, <span class="key">Maul</span> on spare rage, keep <span class="key">Demoralizing Roar</span> up, <span class="key">Mangle (Bear)</span> on cooldown</li>
+      <li>66+: keep <span class="key">Lacerate</span> on the main target</li>
+      <li>Loose mob: <span class="key">Growl</span>; whole group loose: <span class="key">Challenging Roar</span></li>
+      <li>71+ Cat AoE: <span class="key">Swipe (Cat)</span> + <span class="key">Berserk</span></li></ol></div>
+  </div>
+</section>
+
+<section id="survival">
+  <h2>Survival Toolkit</h2>
+  <div class="card tbl"><table><thead><tr><th>Tool</th><th>Use</th></tr></thead><tbody>
+    <tr><td>Survival Instincts <span class="tag F">talent</span></td><td>Below 30% HP; stack with Frenzied Regeneration in Bear</td></tr>
+    <tr><td>Frenzied Regeneration (36)</td><td>Converts rage to health in Bear</td></tr>
+    <tr><td>Barkskin (44)</td><td>Usable in any form without shifting</td></tr>
+    <tr><td>Entangling Roots / Nature's Grasp</td><td>Outdoor kiting: Moonfire → Roots → heal or run</td></tr>
+    <tr><td>Hibernate / Cyclone (70)</td><td>Hibernate beasts &amp; dragonkin; Cyclone anything for 6s</td></tr>
+    <tr><td>Between pulls</td><td>Shift out → Rejuvenation + Regrowth → back in (Natural Shapeshifter cuts cost)</td></tr>
+    <tr><td>Prowl / Travel Form / Dash</td><td>Sneak to objectives, escape bad pulls</td></tr>
+  </tbody></table></div>
+</section>
+
+<section id="glyphs">
+  <h2>Glyphs</h2>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0">Major</h3><ul>
+      <li>Glyph of Rip — solo/leveling</li><li>Glyph of Shred — raid cat</li>
+      <li>Glyph of Savage Roar or Glyph of Berserk — at 80</li><li>Glyph of Maul — bear AoE</li>
+      <li>Glyph of Survival Instincts — bear</li></ul></div>
+    <div class="card"><h3 style="margin-top:0">Minor</h3><ul>
+      <li>Glyph of Dash</li><li>Glyph of Aquatic Form</li><li>Glyph of Unburdened Rebirth</li>
+      <li>Glyph of the Wild</li><li>Glyph of Thorns</li></ul></div>
+  </div>
+</section>
+
+<section id="gear">
+  <h2>Gear &amp; Stat Priority</h2>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0">Cat</h3>
+      <p>Agility &gt; Strength = Attack Power &gt; Hit (263 rating cap at 80) &gt; Expertise &gt; Crit &gt; Armor Penetration</p></div>
+    <div class="card"><h3 style="margin-top:0">Bear</h3>
+      <p>Stamina &amp; Armor &gt; Agility. No Defense needed — Survival of the Fittest makes you crit-immune.</p></div>
+    <div class="card" style="grid-column:1/-1"><ul>
+      <li>Wear Agility/Strength leather. Weapon DPS does not matter for ferals — only the stats on it, so pick the 2H staff/mace with the most Agility.</li>
+      <li>Heirlooms (Agility/AP shoulders, chest, staff/polearm) are the biggest XP boost.</li>
+      <li>Professions: Skinning + Leatherworking (self-made gear, drums) or Herbalism (Lifeblood) + Alchemy.</li></ul></div>
+  </div>
+</section>
+
+<section id="icecrown">
+  <h2>Warmane Icecrown Tips</h2>
+  <div class="card"><ul>
+    <li>Icecrown runs boosted XP — you outlevel zones fast. Don't full-clear zones; quest on the way and keep a <b>tank</b> queue up for near-instant dungeon pops.</li>
+    <li>You can bear-tank dungeons from ~15 (Ferocity + Feral Instinct help Swipe). From 40, Dire Bear + Survival of the Fittest make you solid.</li>
+    <li>Get Dual Spec at 40: one Cat, one Bear.</li>
+  </ul></div>
+</section>
+</main>
+
+<div id="tip"></div>
+
+<script>
+const DATA = [{"n": "Balance", "t": [{"n": "Starlight Wrath", "m": 5, "x": 1, "y": 0, "icon": "Spell_Nature_AbolishMagic", "s": 16814, "d": "Reduces the cast time of your Wrath and Starfire spells by 0.5 sec."}, {"n": "Genesis", "m": 5, "x": 2, "y": 0, "icon": "Spell_Arcane_Arcane03", "s": 57810, "d": "Increases the damage and healing done by your periodic spell damage and healing effects by 5%."}, {"n": "Moonglow", "m": 3, "x": 0, "y": 1, "icon": "Spell_Nature_Sentinal", "s": 16845, "d": "Reduces the Mana cost of your Moonfire, Starfire, Starfall, Wrath, Healing Touch, Nourish, Regrowth and Rejuvenation spells by 9%."}, {"n": "Nature's Majesty", "m": 2, "x": 1, "y": 1, "icon": "INV_Staff_01", "s": 35363, "d": "Increases the critical strike chance of your Wrath, Starfire, Starfall, Nourish and Healing Touch spells by 4%."}, {"n": "Improved Moonfire", "m": 2, "x": 3, "y": 1, "icon": "Spell_Nature_StarFall", "s": 16821, "d": "Increases the damage and critical strike chance of your Moonfire spell by 10%."}, {"n": "Brambles", "m": 3, "x": 0, "y": 2, "icon": "Spell_Nature_Thorns", "s": 16836, "d": "Damage from your Thorns and Entangling Roots increased by 75% and damage done by your Treants increased by 15%. In addition, damage from your Treants and attacks done to you while you have Barkskin active have a 15% chance to daze the target for 3 sec."}, {"n": "Nature's Grace", "m": 3, "x": 1, "y": 2, "icon": "Spell_Nature_NaturesBlessing", "s": 16880, "d": "All non-periodic spell criticals have a 100% chance to grace you with a blessing of nature, increasing your spell casting speed by 20% for 3 sec."}, {"n": "Nature's Splendor", "m": 1, "x": 2, "y": 2, "icon": "Spell_Nature_NatureGuardian", "s": 57865, "d": "Increases the duration of your Moonfire and Rejuvenation spells by 3000 sec."}, {"n": "Nature's Reach", "m": 2, "x": 3, "y": 2, "icon": "Spell_Nature_NatureTouchGrow", "s": 16819, "d": "Increases the range of your Balance spells and Faerie Fire (Feral) ability by 20%, and reduces the threat generated by your Balance spells by 30%."}, {"n": "Vengeance", "m": 5, "x": 1, "y": 3, "icon": "Spell_Nature_Purge", "s": 16909, "d": "Increases the critical strike damage bonus of your Starfire, Starfall, Moonfire, and Wrath spells by 100%."}, {"n": "Celestial Focus", "m": 3, "x": 2, "y": 3, "icon": "Spell_Arcane_StarFire", "s": 16850, "d": "Reduces the pushback suffered from damaging attacks while casting Starfire, Hibernate and Hurricane by 70% and increases your total spell haste by 3%."}, {"n": "Lunar Guidance", "m": 3, "x": 0, "y": 4, "icon": "Ability_Druid_LunarGuidance", "s": 33589, "d": "Increases your spell power by 12% of your total Intellect."}, {"n": "Insect Swarm", "m": 1, "x": 1, "y": 4, "icon": "Spell_Nature_InsectSwarm", "s": 5570, "d": "The enemy target is swarmed by insects, decreasing their chance to hit by 3% and causing 144 Nature damage over 12 sec."}, {"n": "Improved Insect Swarm", "m": 3, "x": 2, "y": 4, "icon": "Spell_Nature_InsectSwarm", "s": 57849, "d": "Increases your damage done by your Wrath spell to targets afflicted by your Insect Swarm by 3%, and increases the critical strike chance of your Starfire spell by 3% on targets afflicted by your Moonfire spell."}, {"n": "Dreamstate", "m": 3, "x": 0, "y": 5, "icon": "Ability_Druid_Dreamstate", "s": 33597, "d": "Regenerate mana equal to 10% of your Intellect every 5 sec, even while casting."}, {"n": "Moonfury", "m": 3, "x": 1, "y": 5, "icon": "Spell_Nature_MoonGlow", "s": 16896, "d": "Increases the damage done by your Starfire, Moonfire and Wrath spells by 10%."}, {"n": "Balance of Power", "m": 2, "x": 2, "y": 5, "icon": "Ability_Druid_BalanceofPower", "s": 33592, "d": "Increases your chance to hit with all spells by 4% and reduces your damage taken from all spells by 6%."}, {"n": "Moonkin Form", "m": 1, "x": 1, "y": 6, "icon": "Spell_Nature_ForceOfNature", "s": 24858, "d": "Shapeshift into Moonkin Form.  While in this form the armor contribution from items is increased by 370%, damage taken while stunned is reduced by 15%, and all party and raid members within 100 yards have their spell critical chance increased by 5%.  Single target spell critical strikes in this form have a chance to instantly regenerate 2% of your total mana.  The Moonkin can not cast healing or resurrection spells while shapeshifted.<br>The act of shapeshifting frees the caster of Polymorph and Movement Impairing effects."}, {"n": "Improved Moonkin Form", "m": 3, "x": 2, "y": 6, "icon": "Ability_Druid_ImprovedMoonkinForm", "s": 48384, "d": "Your Moonkin Aura also causes affected targets to gain 3% haste and you to gain 30% of your spirit as additional spell damage."}, {"n": "Improved Faerie Fire", "m": 3, "x": 3, "y": 6, "icon": "Spell_Nature_FaerieFire", "s": 33600, "d": "Your Faerie Fire spell also increases the chance the target will be hit by spell attacks by 3%, and increases the critical strike chance of your damage spells by 3% on targets afflicted by Faerie Fire."}, {"n": "Owlkin Frenzy", "m": 3, "x": 0, "y": 7, "icon": "Ability_Druid_OwlkinFrenzy", "s": 48389, "d": "Attacks done to you while in Moonkin form have a 15% chance to cause you to go into a Frenzy, increasing your damage by 10%, cause you to be immune to pushback while casting Balance spells and restore 2% base mana every 5 sec. Lasts 10 sec."}, {"n": "Wrath of Cenarius", "m": 5, "x": 2, "y": 7, "icon": "Ability_Druid_TwilightsWrath", "s": 33603, "d": "Your Starfire spell gains an additional 20% and your Wrath gains an additional 10% of your bonus damage effects."}, {"n": "Eclipse", "m": 3, "x": 0, "y": 8, "icon": "Ability_Druid_Eclipse", "s": 48516, "d": "When you critically hit with Starfire, you have a h1% chance of increasing damage done by Wrath by 40%. When you critically hit with Wrath, you have a 100% chance of increasing your critical strike chance with Starfire by 40%. Each effect lasts 15 sec and each has a separate 30 sec cooldown.  Both effects cannot occur simultaneously."}, {"n": "Typhoon", "m": 1, "x": 1, "y": 8, "icon": "Ability_Druid_Typhoon", "s": 50516, "d": "You summon a violent Typhoon that does 400 Nature damage when in contact with hostile targets, knocking them back and dazing them for 6 sec."}, {"n": "Force of Nature", "m": 1, "x": 2, "y": 8, "icon": "Ability_Druid_ForceofNature", "s": 33831, "d": "Summons 3 treants to attack enemy targets for 30 sec."}, {"n": "Gale Winds", "m": 2, "x": 3, "y": 8, "icon": "Ability_Druid_GaleWinds", "s": 48488, "d": "Increases damage done by your Hurricane and Typhoon spells by 30%, and increases the range of your Cyclone spell by 4 yards."}, {"n": "Earth and Moon", "m": 3, "x": 1, "y": 9, "icon": "Ability_Druid_EarthandSky", "s": 48506, "d": "Your Wrath and Starfire spells have a 100% chance to apply the Earth and Moon effect, which increases spell damage taken by 13% for 12 sec.  Also increases your spell damage by 6%."}, {"n": "Starfall", "m": 1, "x": 1, "y": 10, "icon": "Ability_Druid_Starfall", "s": 48505, "d": "You summon a flurry of stars from the sky on all targets within a yards of the caster, each dealing 145 - 167 Arcane damage. Also causes 26 Arcane damage to all other enemies within 5 yards of the enemy target. Maximum 20 stars. Lasts 10 sec.  Shapeshifting into an animal form or mounting cancels the effect. Any effect which causes you to lose control of your character will suppress the starfall effect."}]}, {"n": "Feral Combat", "t": [{"n": "Ferocity", "m": 5, "x": 1, "y": 0, "icon": "Ability_Hunter_Pet_Hyena", "s": 16934, "d": "Reduces the cost of your Maul, Swipe, Claw, Rake and Mangle abilities by 5 Rage or Energy."}, {"n": "Feral Aggression", "m": 5, "x": 2, "y": 0, "icon": "Ability_Druid_DemoralizingRoar", "s": 16858, "d": "Increases the attack power reduction of your Demoralizing Roar by 40% and the damage caused by your Ferocious Bite by 15%."}, {"n": "Feral Instinct", "m": 3, "x": 0, "y": 1, "icon": "Ability_Ambush", "s": 16947, "d": "Increases the damage done by your Swipe ability by 30% and reduces the chance enemies have to detect you while Prowling."}, {"n": "Savage Fury", "m": 2, "x": 1, "y": 1, "icon": "Ability_Druid_Ravage", "s": 16998, "d": "Increases the damage caused by your Claw, Rake, Mangle (Cat), Mangle (Bear), and Maul abilities by 20%."}, {"n": "Thick Hide", "m": 3, "x": 2, "y": 1, "icon": "INV_Misc_Pelt_Bear_03", "s": 16929, "d": "Increases your Armor contribution from cloth and leather items by 10%."}, {"n": "Feral Swiftness", "m": 2, "x": 0, "y": 2, "icon": "Spell_Nature_SpiritWolf", "s": 17002, "d": "Increases your movement speed by 30% in Cat Form and increases your chance to dodge while in Cat Form, Bear Form and Dire Bear Form by 4%."}, {"n": "Survival Instincts", "m": 1, "x": 1, "y": 2, "icon": "Ability_Druid_TigersRoar", "s": 61336, "d": "When activated, this ability temporarily grants you 30% of your maximum health for 20 sec while in Bear Form, Cat Form, or Dire Bear Form.  After the effect expires, the health is lost."}, {"n": "Sharpened Claws", "m": 3, "x": 2, "y": 2, "icon": "INV_Misc_MonsterClaw_04", "s": 16942, "d": "Increases your critical strike chance while in Bear, Dire Bear or Cat Form by 6%."}, {"n": "Shredding Attacks", "m": 2, "x": 0, "y": 3, "icon": "Spell_Shadow_VampiricAura", "s": 16966, "d": "Reduces the energy cost of your Shred ability by 18 and the rage cost of your Lacerate ability by 2."}, {"n": "Predatory Strikes", "m": 3, "x": 1, "y": 3, "icon": "Ability_Hunter_Pet_Cat", "s": 16972, "d": "Increases your melee attack power in Cat, Bear and Dire Bear Forms by 150% of your level and 20% of any attack power on your equipped weapon.  In addition, your finishing moves have a 1101004800% chance per combo point to make your next Nature spell with a base casting time less than 10 sec. become an instant cast spell."}, {"n": "Primal Fury", "m": 2, "x": 2, "y": 3, "icon": "Ability_Racial_Cannibalize", "s": 37116, "d": "Gives you a 100% chance to gain an additional 5 Rage anytime you get a critical strike while in Bear and Dire Bear Form and your critical strikes from Cat Form abilities that add combo points  have a 100% chance to add an additional combo point."}, {"n": "Primal Precision", "m": 2, "x": 3, "y": 3, "icon": "Ability_Druid_PrimalPrecision", "s": 48409, "d": "Increases your expertise by 10, and you are refunded 80% of the energy cost of a finishing move if it fails to land."}, {"n": "Brutal Impact", "m": 2, "x": 0, "y": 4, "icon": "Ability_Druid_Bash", "s": 16940, "d": "Increases the stun duration of your Bash and Pounce abilities by 1 sec and decreases the cooldown of Bash by 30 sec."}, {"n": "Feral Charge", "m": 1, "x": 2, "y": 4, "icon": "Ability_Hunter_Pet_Bear", "s": 49377, "d": "Teaches Feral Charge (Bear) and Feral Charge (Cat).<br>Feral Charge (Bear) - Causes you to charge an enemy, immobilizing and interrupting any spell being cast for 4 sec. This ability can be used in Bear Form and Dire Bear Form. 15 second cooldown.<br>Feral Charge (Cat) - Causes you to leap behind an enemy, dazing them for 3 sec. 30 second cooldown."}, {"n": "Nurturing Instinct", "m": 2, "x": 3, "y": 4, "icon": "Ability_Druid_HealingInstincts", "s": 33872, "d": "Increases your healing spells by up to 70% of your Agility, and increases healing done to you by 20% while in Cat form."}, {"n": "Natural Reaction", "m": 3, "x": 0, "y": 5, "icon": "Ability_BullRush", "s": 57878, "d": "Increases your dodge while in Bear Form or Dire Bear Form by 6%, and you regenerate 3 rage every time you dodge while in Bear Form or Dire Bear Form."}, {"n": "Heart of the Wild", "m": 5, "x": 1, "y": 5, "icon": "Spell_Holy_BlessingOfAgility", "s": 17003, "d": "Increases your Intellect by 20%.  In addition, while in Bear or Dire Bear Form your Stamina is increased by 10% and while in Cat Form your attack power is increased by 10%."}, {"n": "Survival of the Fittest", "m": 3, "x": 2, "y": 5, "icon": "Ability_Druid_Enrage", "s": 33853, "d": "Increases all attributes by 6%, reduces the chance you'll be critically hit by melee attacks by 6%, and increases your armor contribution from cloth and leather items in Bear Form and Dire Bear Form by 33%."}, {"n": "Leader of the Pack", "m": 1, "x": 1, "y": 6, "icon": "Spell_Nature_UnyeildingStamina", "s": 17007, "d": "While in Cat, Bear or Dire Bear Form, the Leader of the Pack increases ranged and melee critical chance of all party and raid members within 100 yards by 5%."}, {"n": "Improved Leader of the Pack", "m": 2, "x": 2, "y": 6, "icon": "Spell_Nature_UnyeildingStamina", "s": 34297, "d": "Your Leader of the Pack ability also causes affected targets to heal themselves for 4% of their total health when they critically hit with a melee or ranged attack.  The healing effect cannot occur more than once every 6 sec.  In addition, you gain 8% of your maximum mana when you benefit from this heal."}, {"n": "Primal Tenacity", "m": 3, "x": 3, "y": 6, "icon": "Ability_Druid_PrimalTenacity", "s": 33851, "d": "Reduces the duration of fear effects by 30%, reduces all damage taken while stunned by 30% while in Cat Form."}, {"n": "Protector of the Pack", "m": 3, "x": 0, "y": 7, "icon": "Ability_Druid_ChallangingRoar", "s": 57873, "d": "Increases your attack power by 6% and reduces the damage you take by 12%, while in Bear or Dire Bear Form."}, {"n": "Predatory Instincts", "m": 3, "x": 2, "y": 7, "icon": "Ability_Druid_PredatoryInstincts", "s": 33859, "d": "While in Cat Form increases your damage from melee critical strikes by 10% and reduces the damage taken from area of effect attacks by 30%."}, {"n": "Infected Wounds", "m": 3, "x": 3, "y": 7, "icon": "Ability_Druid_InfectedWound", "s": 48483, "d": "Your Shred, Maul, and Mangle attacks cause an Infected Wound in the target. The Infected Wound reduces the movement speed of the target by 50% and the attack speed by 20%. Lasts 12 sec."}, {"n": "King of the Jungle", "m": 3, "x": 0, "y": 8, "icon": "Ability_Druid_KingoftheJungle", "s": 48492, "d": "While using your Enrage ability in Bear Form or Dire Bear Form, your damage is increased by 15%, and your Tiger's Fury ability also instantly restores 60 energy.  In addition, the mana cost of Bear Form, Cat Form, and Dire Bear Form is reduced by 60%."}, {"n": "Mangle", "m": 1, "x": 1, "y": 8, "icon": "Ability_Druid_Mangle2", "s": 33917, "d": "Mangle the target, inflicting damage and causing the target to take additional damage from bleed effects for 1 min.  This ability can be used in Cat Form or Dire Bear Form."}, {"n": "Improved Mangle", "m": 3, "x": 2, "y": 8, "icon": "Ability_Druid_Mangle2", "s": 48532, "d": "Reduces the cooldown of your Mangle (Bear) ability by 1500.1 sec., and reduces the energy cost of your Mangle (Cat) ability by 6."}, {"n": "Rend and Tear", "m": 5, "x": 1, "y": 9, "icon": "Ability_Druid_PrimalAgression", "s": 48432, "d": "Increases damage done by your Maul and Shred attacks on bleeding targets by 20%, and increases the critical strike chance of your Ferocious Bite ability on bleeding targets by 25%."}, {"n": "Primal Gore", "m": 1, "x": 2, "y": 9, "icon": "Ability_Druid_Rake", "s": 63503, "d": "Grants the periodic damage from your Lacerate and Rip abilities the ability to critically hit."}, {"n": "Berserk", "m": 1, "x": 1, "y": 10, "icon": "Ability_Druid_Berserk", "s": 50334, "d": "When activated, this ability causes your Mangle (Bear) ability to hit up to 3 targets and have no cooldown, and reduces the energy cost of all your Cat Form abilities by 50%.  Lasts 15 sec.  You cannot use Tiger's Fury while Berserk is active. <br>Clears the effect of Fear and makes you immune to Fear for the duration."}]}, {"n": "Restoration", "t": [{"n": "Improved Mark of the Wild", "m": 2, "x": 0, "y": 0, "icon": "Spell_Nature_Regeneration", "s": 17050, "d": "Increases the effects of your Mark of the Wild and Gift of the Wild spells by 40%, and increases all of your total attributes by 2%."}, {"n": "Nature's Focus", "m": 3, "x": 1, "y": 0, "icon": "Spell_Nature_HealingWaveGreater", "s": 17063, "d": "Reduces the pushback suffered from damaging attacks  while casting Healing Touch, Wrath, Entangling Roots, Cyclone, Nourish, Regrowth and Tranquility by 70%."}, {"n": "Furor", "m": 5, "x": 2, "y": 0, "icon": "Spell_Holy_BlessingOfStamina", "s": 17056, "d": "Gives you 100% chance to gain 10 Rage when you shapeshift into Bear and Dire Bear Form, and you keep up to 100 of your Energy when you shapeshift into Cat Form, and increases your total Intellect while in Moonkin form by 10%."}, {"n": "Naturalist", "m": 5, "x": 0, "y": 1, "icon": "Spell_Nature_HealingTouch", "s": 17069, "d": "Reduces the cast time of your Healing Touch spell by 0.5 sec and increases the damage you deal with physical attacks in all forms by 10%."}, {"n": "Subtlety", "m": 3, "x": 1, "y": 1, "icon": "Ability_EyeOfTheOwl", "s": 17118, "d": "Reduces the threat generated by your restoration spells by 30% and reduces the chance your helpful spells, Moonfire, and Insect Swarm will be dispelled by 30%."}, {"n": "Natural Shapeshifter", "m": 3, "x": 2, "y": 1, "icon": "Spell_Nature_WispSplode", "s": 16833, "d": "Reduces the mana cost of all shapeshifting by 30%."}, {"n": "Intensity", "m": 3, "x": 0, "y": 2, "icon": "Spell_Frost_WindWalkOn", "s": 17106, "d": "Allows 50% of your Mana regeneration to continue while casting and causes your Enrage ability to instantly generate 10 rage."}, {"n": "Omen of Clarity", "m": 1, "x": 1, "y": 2, "icon": "Spell_Nature_CrystalBall", "s": 16864, "d": "Each of the Druid's damage, healing spells and auto attacks has a chance of causing the caster to enter a Clearcasting state.  The Clearcasting state reduces the Mana, Rage or Energy cost of your next damage, healing spell or offensive ability by 100%."}, {"n": "Master Shapeshifter", "m": 2, "x": 2, "y": 2, "icon": "Ability_Druid_MasterShapeshifter", "s": 48411, "d": "Grants an effect which lasts while the Druid is within the respective shapeshift form.<br>Bear Form - Increases physical damage by 4%.<br>Cat Form - Increases critical strike chance by 4%.<br>Moonkin Form - Increases spell damage by 4%.<br>Tree of Life Form - Increases healing by 4%."}, {"n": "Tranquil Spirit", "m": 5, "x": 1, "y": 3, "icon": "Spell_Holy_ElunesGrace", "s": 24968, "d": "Reduces the mana cost of your Healing Touch, Nourish and Tranquility spells by 10%."}, {"n": "Improved Rejuvenation", "m": 3, "x": 2, "y": 3, "icon": "Spell_Nature_Rejuvenation", "s": 17111, "d": "Increases the effect of your Rejuvenation spell by 15%."}, {"n": "Nature's Swiftness", "m": 1, "x": 0, "y": 4, "icon": "Spell_Nature_RavenForm", "s": 17116, "d": "When activated, your next Nature spell with a base casting time less than 10 sec. becomes an instant cast spell."}, {"n": "Gift of Nature", "m": 5, "x": 1, "y": 4, "icon": "Spell_Nature_ProtectionformNature", "s": 17104, "d": "Increases the effect of all healing spells by 10%."}, {"n": "Improved Tranquility", "m": 2, "x": 3, "y": 4, "icon": "Spell_Nature_Tranquility", "s": 17123, "d": "Reduces threat caused by Tranquility by 100%, and reduces the cooldown by 60%."}, {"n": "Empowered Touch", "m": 2, "x": 0, "y": 5, "icon": "Ability_Druid_EmpoweredTouch", "s": 33879, "d": "Your Healing Touch spell gains an additional 40% and your Nourish spell gains an additional 20% of your bonus healing effects."}, {"n": "Nature's Bounty", "m": 5, "x": 2, "y": 5, "icon": "Spell_Nature_ResistNature", "s": 17074, "d": "Increases the critical effect chance of your Regrowth and Nourish spells by 25%."}, {"n": "Living Spirit", "m": 3, "x": 0, "y": 6, "icon": "Spell_Nature_GiftoftheWaterSpirit", "s": 34151, "d": "Increases your total Spirit by 15%."}, {"n": "Swiftmend", "m": 1, "x": 1, "y": 6, "icon": "INV_Relics_IdolofRejuvenation", "s": 18562, "d": "Consumes a Rejuvenation or Regrowth effect on a friendly target to instantly heal them an amount equal to 12 sec. of Rejuvenation or 18 sec. of Regrowth."}, {"n": "Natural Perfection", "m": 3, "x": 2, "y": 6, "icon": "Ability_Druid_NaturalPerfection", "s": 33881, "d": "Your critical strike chance with all spells is increased by 3% and critical strikes against you give you the Natural Perfection effect reducing all damage taken by 4%.  Stacks up to 3 times.  Lasts 8 sec."}, {"n": "Empowered Rejuvenation", "m": 5, "x": 1, "y": 7, "icon": "Ability_Druid_EmpoweredRejuvination", "s": 33886, "d": "The bonus healing effects of your healing over time spells is increased by 20%."}, {"n": "Living Seed", "m": 3, "x": 2, "y": 7, "icon": "Ability_Druid_GiftoftheEarthmother", "s": 48496, "d": "When you critically heal your target with Swiftmend, Regrowth, Nourish or Healing Touch spell you have a 100% chance to plant a Living Seed on the target for 30% of the amount healed. The Living Seed will bloom when the target is next attacked. Lasts 15 sec."}, {"n": "Revitalize", "m": 3, "x": 0, "y": 8, "icon": "Ability_Druid_Replenish", "s": 48539, "d": "Your Rejuvenation and Wild Growth spells have a 15% chance to restore 8 Energy, 4 Rage, 1% Mana or 16 Runic Power per tick."}, {"n": "Tree of Life", "m": 1, "x": 1, "y": 8, "icon": "Ability_Druid_TreeofLife", "s": 65139, "d": "Reduces the mana cost of your healing over time spells by 20% and grants the ability to shapeshift into the Tree of Life. While in this form you increase healing received by 6% for all party and raid members within 100 yards, and you can only cast Restoration spells in addition to Innervate, Barkskin, Nature's Grasp and Thorns spells.<br>The act of shapeshifting frees the caster of Polymorph and Movement Impairing effects."}, {"n": "Improved Tree of Life", "m": 3, "x": 2, "y": 8, "icon": "Ability_Druid_ImprovedTreeForm", "s": 48535, "d": "Increases your armor contribution from items while in Tree of Life Form by 200%, and increases your healing spell power by 15% of your spirit while in Tree of Life Form."}, {"n": "Improved Barkskin", "m": 2, "x": 0, "y": 9, "icon": "Spell_Nature_StoneClawTotem", "s": 63410, "d": "Grants 160% additional armor contribution from cloth and leather items while in Travel Form or while not shapeshifted, increases the damage reduction granted by your Barkskin spell by 10% and reduces the chance your Barkskin is dispelled by 70%."}, {"n": "Gift of the Earthmother", "m": 5, "x": 2, "y": 9, "icon": "Ability_Druid_ManaTree", "s": 51179, "d": "Increases your total spell haste by 10% and reduces the base cooldown of your Lifebloom spell by 150%."}, {"n": "Wild Growth", "m": 1, "x": 1, "y": 10, "icon": "Ability_Druid_Flourish", "s": 48438, "d": "Heals up to 5 friendly party or raid members within 15 yards of the target for 686 over 7 sec. The amount healed is applied quickly at first, and slows down as the Wild Growth reaches its full duration."}]}];
+// Leveling order: [treeIndex, talentName, points], starting at level 10
+const ORDER = [
+  [1,"Ferocity",5,"Cheaper Claw/Rake/Maul/Swipe/Mangle"],
+  [1,"Feral Instinct",3,"Swipe damage, better Prowl"],
+  [1,"Savage Fury",2,"More Claw/Rake/Mangle/Maul damage"],
+  [1,"Sharpened Claws",3,"Crit in forms"],
+  [1,"Feral Swiftness",2,"Out-of-combat run speed"],
+  [1,"Predatory Strikes",3,"Attack power in forms"],
+  [1,"Shredding Attacks",2,"Cheaper Shred/Lacerate"],
+  [1,"Feral Charge",1,"Gap-closer & interrupt"],
+  [1,"Primal Fury",2,"Extra combo point / rage on crit"],
+  [1,"Primal Precision",2,"Expertise + energy refund"],
+  [1,"Heart of the Wild",5,"+10% Int; cat AP / bear Stamina"],
+  [1,"Leader of the Pack",1,"5% crit aura"],
+  [1,"Survival of the Fittest",3,"+6% stats, crit immunity"],
+  [1,"Improved Leader of the Pack",2,"Self-heal on crit — huge solo"],
+  [1,"Predatory Instincts",3,"Bigger crits, AoE avoidance"],
+  [1,"Infected Wounds",1,"Snare (also unlocks row 9)"],
+  [1,"Mangle",1,"Core builder, bleed debuff"],
+  [1,"Improved Mangle",3,"Cheaper / faster Mangle"],
+  [1,"Infected Wounds",1,"Gets you to 45 points for row 10"],
+  [1,"Rend and Tear",5,"Shred/Maul vs bleeding, Bite crit"],
+  [1,"Berserk",1,"Big cooldown, AoE pulls"],
+  [1,"Primal Gore",1,"Rip/Lacerate can crit"],
+  [1,"King of the Jungle",3,"Tiger's Fury +60 energy"],
+  [2,"Furor",5,"Energy/rage on shapeshift (powershift)"],
+  [2,"Naturalist",5,"+10% physical damage"],
+  [2,"Natural Shapeshifter",3,"Cheaper shapeshifts"],
+  [2,"Omen of Clarity",1,"Free abilities proc"],
+  [2,"Master Shapeshifter",2,"+4% crit in Cat"]
+];
+const TREE_CLS=["B","F","R"];
+const ICON = n => "https://cdn.cavernoftime.com/wotlk/icons/medium/"+n.toLowerCase()+".jpg";
+
+// expand into per-level picks
+const picks=[]; let lvl=10;
+for(const [t,n,p] of ORDER) for(let i=0;i<p;i++) picks.push({lvl:lvl++,t,n});
+
+// order table
+(function(){
+  const body=document.getElementById("orderBody"); const tot=[0,0,0]; let l=10;
+  for(const [t,n,p,why] of ORDER){ tot[t]+=p; const a=l, b=l+p-1; l+=p;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${a===b?a:a+"–"+b}</td><td><b>${n}</b> ${p}</td><td><span class="tag ${TREE_CLS[t]}">${DATA[t].n}</span></td><td>${tot[t]}</td><td class="note">${why}</td>`;
+    body.appendChild(tr);
+  }
+})();
+
+// build trees
+const cells={};
+const treesEl=document.getElementById("trees");
+DATA.forEach((tree,ti)=>{
+  const box=document.createElement("div"); box.className="tree "+TREE_CLS[ti];
+  box.innerHTML=`<h4>${tree.n} <span id="tt${ti}">0</span></h4>`;
+  const g=document.createElement("div"); g.className="tgrid";
+  const rows=Math.max(...tree.t.map(x=>x.y))+1; g.style.gridTemplateRows=`repeat(${rows},62px)`;
+  tree.t.forEach(tal=>{
+    const a=document.createElement("a"); a.className="tal"; a.href="https://wotlk.cavernoftime.com/spell="+tal.s; a.target="_blank"; a.rel="noopener";
+    a.style.gridColumn=tal.x+1; a.style.gridRow=tal.y+1; a.style.backgroundImage=`url(${ICON(tal.icon)})`;
+    a.innerHTML=`<span class="lv"></span><span class="pts">0/${tal.m}</span>`;
+    a.dataset.key=ti+"|"+tal.n; cells[ti+"|"+tal.n]={el:a,tal,ti};
+    g.appendChild(a);
+  });
+  box.appendChild(g); treesEl.appendChild(box);
+});
+
+const firstLvl={}; picks.forEach(p=>{const k=p.t+"|"+p.n; if(!(k in firstLvl)) firstLvl[k]=p.lvl;});
+function levelsFor(k){ return picks.filter(p=>p.t+"|"+p.n===k).map(p=>p.lvl); }
+
+function render(L){
+  document.getElementById("lvlNum").textContent=L;
+  const pts={}, tot=[0,0,0];
+  picks.forEach(p=>{ if(p.lvl<=L){ const k=p.t+"|"+p.n; pts[k]=(pts[k]||0)+1; tot[p.t]++; }});
+  for(const k in cells){ const c=cells[k], n=pts[k]||0, m=c.tal.m;
+    c.el.classList.toggle("part",n>0&&n<m); c.el.classList.toggle("max",n===m);
+    const justNow=picks.some(p=>p.lvl===L&&p.t+"|"+p.n===k);
+    c.el.classList.toggle("next",justNow);
+    c.el.querySelector(".pts").textContent=n+"/"+m;
+    c.el.querySelector(".lv").textContent=firstLvl[k]||"";
+  }
+  tot.forEach((v,i)=>document.getElementById("tt"+i).textContent=v);
+  document.getElementById("split").textContent=tot.join("/");
+}
+const slider=document.getElementById("lvl");
+slider.addEventListener("input",()=>render(+slider.value));
+document.getElementById("prev").onclick=()=>{slider.value=Math.max(9,+slider.value-1);render(+slider.value)};
+document.getElementById("next").onclick=()=>{slider.value=Math.min(80,+slider.value+1);render(+slider.value)};
+render(80);
+
+// tooltip
+const tip=document.getElementById("tip");
+treesEl.addEventListener("mousemove",e=>{
+  const a=e.target.closest(".tal"); if(!a){tip.style.display="none";return;}
+  const c=cells[a.dataset.key]; const lv=levelsFor(a.dataset.key);
+  tip.innerHTML=`<div class="tn">${c.tal.n}</div><div class="tr">Max rank ${c.tal.m} · ${DATA[c.ti].n}</div><div class="td">${c.tal.d}</div>`+
+    (lv.length?`<div class="tl">Taken at level${lv.length>1?"s":""}: ${lv.join(", ")}</div>`:`<div class="tl" style="color:var(--muted)">Not taken in this build</div>`)+
+    `<div class="tlink">Click: open on Cavern of Time (spell ${c.tal.s})</div>`;
+  tip.style.display="block";
+  const x=Math.min(e.clientX+16, window.innerWidth-tip.offsetWidth-8);
+  const y=Math.min(e.clientY+16, window.innerHeight-tip.offsetHeight-8);
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+});
+treesEl.addEventListener("mouseleave",()=>tip.style.display="none");
+</script>
+</body>
+</html>
